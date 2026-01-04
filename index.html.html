@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cattle Dispatch Entry</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #f5f5f5;
+  font-size: 14px;
+  min-height: 100vh;
+  padding-bottom: 90px;
+}
+h1 {
+  text-align: center;
+  color: #fff;
+  background: #AA0000;
+  padding: 16px;
+  margin: 0;
+  font-size: 20px;
+}
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.left-panel {
+  flex: 1 1 380px;
+  min-width: 320px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.right-panel {
+  flex: 2 1 600px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 12px;
+  border: 1px solid #ddd;
+  text-align: center;
+  white-space: nowrap;
+}
+th {
+  background: #AA0000;
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+tbody tr:hover {
+  background: #f9f9f9;
+}
+tfoot td {
+  font-weight: bold;
+  background: #f0f0f0;
+}
+.summary-row td {
+  background: #ffe6e6 !important;
+  font-weight: bold;
+  color: #AA0000;
+  font-size: 15px;
+}
+.form-group {
+  margin-bottom: 16px;
+}
+label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+input, select {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+input:invalid, select:invalid {
+  border-color: #ff0000;
+}
+.error {
+  color: #AA0000;
+  font-size: 13px;
+  margin-top: 4px;
+  display: block;
+}
+button {
+  padding: 12px 20px;
+  background: #AA0000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+}
+button:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+.collapsed { display: none; }
+
+.submit-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 15px 20px;
+  text-align: center;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+  z-index: 1000;
+  border-top: 3px solid #AA0000;
+}
+
+@media (max-width: 768px) {
+  h1 { font-size: 18px; padding: 14px; }
+  .container { padding: 12px; gap: 16px; }
+  .left-panel, .right-panel { padding: 16px; }
+  input, select { padding: 14px; font-size: 16px; }
+  button { width: 100%; padding: 16px; font-size: 18px; margin-top: 10px; }
+  th, td { padding: 10px; font-size: 13px; }
+  .summary-row td { font-size: 14px; }
+}
+</style>
+</head>
+<body>
+<h1>Cattle Dispatch Entry</h1>
+
+<div class="container">
+  <div class="left-panel">
+    <div id="commonSection">
+      <div class="form-group"><label>Dispatch Date</label><input type="date" id="dispatchDate" required></div>
+      <div class="form-group">
+        <label>Slaughter House</label>
+        <select id="slaughterHouse" required>
+          <option value="">Select</option>
+          <option>Abedin International Lahore</option>
+          <!-- ... all your options ... -->
+          <option>Local Sale</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Company</label><input id="company"></div>
+      <div class="form-group"><label>Total Cattle</label><input type="number" id="totalCattle" min="1" max="200" required></div>
+      <div class="form-group"><label>Vehicle Number</label><input id="vehicleNumber"></div>
+      <div class="form-group"><label>Driver Contact Number</label><input id="driverNumber"></div>
+      <div class="form-group"><label>Carcass Price (per kg)</label><input type="number" id="carcassPricePerKg" step="0.01" min="0"></div>
+      <div class="form-group"><label>Offals</label><input type="number" id="offalsPrice" step="0.01" min="0"></div>
+      <div class="form-group"><label>Slaughtering Fee</label><input type="number" id="slaughteringFee" step="0.01" min="0"></div>
+      <div class="form-group"><label>Carriage (TOTAL)</label><input type="number" id="cattleCarriage" step="0.01" min="0"></div>
+      <div class="form-group"><label>Misc (TOTAL)</label><input type="number" id="miscExpenses" step="0.01" min="0"></div>
+      <button id="lockCommon">Lock & Create Rows</button>
+    </div>
+
+    <div id="perCattleSection" class="collapsed">
+      <div class="form-group">
+        <label>Cattle Tag</label>
+        <select id="tagNumber" required></select>
+        <span id="tagError" class="error" style="display:none;">This tag is already used!</span>
+      </div>
+      <div class="form-group">
+        <label>Final Weight (kg)</label>
+        <input type="number" id="finalWeight" step="0.1" min="0.1" required>
+        <span id="finalWtError" class="error" style="display:none;">Must be greater than 0</span>
+      </div>
+      <div class="form-group">
+        <label>Carcass Weight (kg)</label>
+        <input type="number" id="carcassWeight" step="0.1" min="0" required>
+        <span id="carcassWtError" class="error" style="display:none;">Must be ≥ 0</span>
+      </div>
+      <div class="form-group">
+        <label>Selling Price</label>
+        <input type="number" id="sellingPriceInput" step="0.01" min="0" placeholder="Auto-calculated (editable)">
+        <span id="priceError" class="error" style="display:none;">Must be ≥ 0</span>
+      </div>
+      <div class="form-group">
+        <label>Decision</label>
+        <select id="decisionSelect">
+          <option value="">Select</option>
+          <option value="Accepted">Accepted</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Remarks</label><input id="remarks" placeholder="e.g. Accepted / Rejected"></div>
+      <div style="text-align:right;"><button id="addCattle">Add Cattle</button></div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="table-container">
+      <table id="cattleTable">
+        <thead>
+          <tr>
+            <th>Cattle Tag</th>
+            <th>Dispatch Date</th>
+            <th>Dispatch Cost</th>
+            <th>Final Wt</th>
+            <th>Carcass Wt</th>
+            <th>% Yield</th>
+            <th>Selling Price</th>
+            <th>Remarks</th>
+<th>Purchase Wt</th>
+<th>Days</th>
+<th>Feed Cost</th>
+<th>P / L</th>
+
+          </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+          <tr class="summary-row">
+            <td colspan="2"><strong>Common Values (per head)</strong></td>
+            <td id="dispCostVal"><strong>0</strong></td>
+            <td colspan="5">
+              <strong>Carcass Price:</strong> <span id="carcassPriceVal">0</span> 
+              <strong>Offals:</strong> <span id="offalsVal">0</span> 
+              <strong>Slaughter Fee:</strong> <span id="slaughterVal">0</span>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="3"><strong>TOTALS / AVERAGE</strong></td>
+            <td id="totalFinalWt"><strong>0</strong></td>
+            <td id="totalCarcassWt"><strong>0</strong></td>
+            <td id="avgYield"><strong>0%</strong></td>
+            <td id="totalSelling"><strong>0</strong></td>
+            <td></td>
+          </tr>
+<td></td><td></td><td></td><td></td>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="submit-bar">
+  <button id="submitToSheet">Submit to Google Sheet</button>
+</div>
+
+<form id="sheetForm" method="POST" target="hiddenFrame"
+      action="https://script.google.com/macros/s/AKfycbxtJ3RO8H_HMrWu0g-rLZPoiQKeM4TewcD21wZ4A0ug6-4RqXX6sbM8OpIeWUpz-uNyFQ/exec">
+
+  <input type="hidden" name="payload" id="payloadInput">
+</form>
+<iframe name="hiddenFrame" style="display:none;"></iframe>
+
+<script>
+const tbody = document.querySelector("#cattleTable tbody");
+const tagNumber = document.getElementById("tagNumber");
+let currentRow = 0;
+let submitted = false;
+let usedTags = new Set(); // Track used tags
+
+// Populate tags
+for (let i = 1; i <= 200; i++) {
+  const opt = document.createElement("option");
+  opt.value = `MOO-${String(i).padStart(3,"0")}`;
+  opt.textContent = opt.value;
+  tagNumber.appendChild(opt);
+}
+
+function updateTotals() {
+  let totalFinal = 0, totalCarcass = 0, totalSelling = 0, countWithYield = 0, sumYield = 0;
+
+  [...tbody.rows].forEach(row => {
+    if (row.cells[0].textContent.trim()) {
+      const finalWt = parseFloat(row.cells[3].textContent) || 0;
+      const carcassWt = parseFloat(row.cells[4].textContent) || 0;
+      const selling = parseFloat(row.cells[6].textContent) || 0;
+      const yield = parseFloat(row.cells[5].textContent.replace('%','')) || 0;
+
+      totalFinal += finalWt;
+      totalCarcass += carcassWt;
+      totalSelling += selling;
+      if (finalWt > 0) {
+        sumYield += yield;
+        countWithYield++;
+      }
+    }
+  });
+
+  const avgYield = countWithYield > 0 ? (sumYield / countWithYield).toFixed(2) : 0;
+
+  document.getElementById('totalFinalWt').innerText = totalFinal.toFixed(1);
+  document.getElementById('totalCarcassWt').innerText = totalCarcass.toFixed(1);
+  document.getElementById('avgYield').innerText = avgYield + '%';
+  document.getElementById('totalSelling').innerText = totalSelling.toFixed(0);
+}
+
+document.getElementById('lockCommon').onclick = () => {
+  const total = Number(totalCattle.value || 0);
+  if (total < 1 || total > 200) {
+    alert("Please enter Total Cattle between 1 and 200");
+    return;
+  }
+
+  const dispatchCost = (Number(cattleCarriage.value || 0) + Number(miscExpenses.value || 0)) / total;
+
+  window.commonData = {
+    dispatchDate: dispatchDate.value || new Date().toISOString().split('T')[0],
+    slaughterHouse: slaughterHouse.value,
+    company: company.value,
+    vehicleNumber: vehicleNumber.value,
+    driverNumber: driverNumber.value,
+    carcassPricePerKg: Number(carcassPricePerKg.value || 0),
+    offalsPrice: Number(offalsPrice.value || 0),
+    slaughteringFee: Number(slaughteringFee.value || 0),
+    dispatchCost: dispatchCost.toFixed(2)
+  };
+
+  document.getElementById('dispCostVal').innerText = window.commonData.dispatchCost;
+  document.getElementById('carcassPriceVal').innerText = window.commonData.carcassPricePerKg;
+  document.getElementById('offalsVal').innerText = window.commonData.offalsPrice;
+  document.getElementById('slaughterVal').innerText = window.commonData.slaughteringFee;
+
+  tbody.innerHTML = "";
+  currentRow = 0;
+  usedTags.clear(); // Reset used tags
+
+  // Re-enable all tag options
+  [...tagNumber.options].forEach(opt => opt.disabled = false);
+
+  const hiddenJSON = JSON.stringify([
+    window.commonData.slaughterHouse,
+    window.commonData.company,
+    window.commonData.vehicleNumber,
+    window.commonData.driverNumber,
+    window.commonData.carcassPricePerKg,
+    window.commonData.offalsPrice,
+    window.commonData.slaughteringFee
+  ]);
+
+  for (let i = 0; i < total; i++) {
+    tbody.innerHTML += `<tr data-hidden='${hiddenJSON}'>
+      <td></td>
+      <td>${window.commonData.dispatchDate}</td>
+      <td>${window.commonData.dispatchCost}</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>`;
+  }
+
+  updateTotals();
+  document.getElementById('commonSection').classList.add('collapsed');
+  document.getElementById('perCattleSection').classList.remove('collapsed');
+};
+
+function calcSell() {
+  if (!window.commonData) return;
+  const autoPrice = (
+    window.commonData.carcassPricePerKg * (Number(carcassWeight.value) || 0) +
+    window.commonData.offalsPrice -
+    window.commonData.slaughteringFee
+  ).toFixed(2);
+
+  if (!sellingPriceInput.value || sellingPriceInput.dataset.auto === "true") {
+    sellingPriceInput.value = autoPrice;
+    sellingPriceInput.dataset.auto = "true";
+  }
+}
+carcassWeight.oninput = calcSell;
+sellingPriceInput.oninput = () => { sellingPriceInput.dataset.auto = "false"; };
+
+decisionSelect.onchange = () => { remarks.value = decisionSelect.value; };
+
+document.getElementById('addCattle').onclick = () => {
+  if (!window.commonData) { alert("Please lock common data first"); return; }
+
+  // Reset errors
+  document.getElementById('tagError').style.display = 'none';
+  document.getElementById('finalWtError').style.display = 'none';
+  document.getElementById('carcassWtError').style.display = 'none';
+  document.getElementById('priceError').style.display = 'none';
+
+  const tag = tagNumber.value;
+  const finalWt = Number(finalWeight.value);
+  const carcassWt = Number(carcassWeight.value);
+  const sellingPrice = Number(sellingPriceInput.value);
+
+  // Validation
+  if (!tag) {
+    alert("Please select a Cattle Tag");
+    return;
+  }
+  if (usedTags.has(tag)) {
+    document.getElementById('tagError').style.display = 'block';
+    return;
+  }
+  if (isNaN(finalWt) || finalWt <= 0) {
+    document.getElementById('finalWtError').style.display = 'block';
+    return;
+  }
+  if (isNaN(carcassWt) || carcassWt < 0) {
+    document.getElementById('carcassWtError').style.display = 'block';
+    return;
+  }
+  if (isNaN(sellingPrice) || sellingPrice < 0) {
+    document.getElementById('priceError').style.display = 'block';
+    return;
+  }
+
+  const row = tbody.children[currentRow];
+  if (!row) { alert("All rows have been filled!"); return; }
+
+  row.cells[0].textContent = tag;
+  row.cells[3].textContent = finalWt.toFixed(1);
+  row.cells[4].textContent = carcassWt.toFixed(1);
+  row.cells[5].textContent = finalWt > 0 ? ((carcassWt / finalWt) * 100).toFixed(2) + "%" : "";
+  row.cells[6].textContent = sellingPrice.toFixed(2);
+  row.cells[7].textContent = remarks.value;
+// ---- LOOKUP DATA FILL (2nd SHEET) ----
+const lookup = lookupData[tag];
+
+row.cells[8].textContent  = lookup ? lookup.purchaseWeight ?? "" : "";
+row.cells[9].textContent  = lookup ? lookup.daysAtFarm ?? "" : "";
+row.cells[10].textContent = lookup ? lookup.feedCost ?? "" : "";
+row.cells[11].textContent = lookup ? lookup.pl ?? "" : "";
+
+
+  // Mark tag as used
+  usedTags.add(tag);
+  tagNumber.querySelector(`option[value="${tag}"]`).disabled = true;
+
+  currentRow++;
+  updateTotals();
+
+  // Clear form
+  tagNumber.value = "";
+  finalWeight.value = carcassWeight.value = sellingPriceInput.value = remarks.value = "";
+  decisionSelect.value = "";
+};
+
+document.getElementById('submitToSheet').onclick = () => {
+  if (submitted) { alert("Already submitted!"); return; }
+  const filledRows = [...tbody.rows].filter(r => r.cells[0].textContent.trim());
+  if (filledRows.length === 0) { alert("No data to submit"); return; }
+
+  const data = filledRows.map(r => {
+    const hidden = JSON.parse(r.dataset.hidden);
+    return [
+  r.cells[0].textContent, // Tag
+  r.cells[1].textContent, // Date
+  hidden[0], hidden[1], hidden[2], hidden[3],
+  hidden[4], hidden[5], hidden[6],
+  r.cells[2].textContent, // Dispatch Cost
+  r.cells[3].textContent, // Final Wt
+  r.cells[4].textContent, // Carcass Wt
+  r.cells[5].textContent, // Yield
+  r.cells[6].textContent, // Selling
+  r.cells[7].textContent, // Remarks
+  r.cells[8].textContent, // Purchase Wt (2nd sheet)
+  r.cells[9].textContent, // Days
+  r.cells[10].textContent, // Feed Cost
+  r.cells[11].textContent // P/L
+];
+
+  });
+
+  payloadInput.value = JSON.stringify(data);
+  document.getElementById("sheetForm").submit();
+
+  alert("Submitted successfully!");
+  document.getElementById('submitToSheet').disabled = true;
+  submitted = true;
+};
+</script>
+<script>
+const WEB_APP_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
+
+function loadNetworkData() {
+  fetch(WEB_APP_URL)
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.querySelector("#cattleTable tbody");
+      tbody.innerHTML = "";
+
+      data.forEach(row => {
+        const tr = document.createElement("tr");
+
+        row.forEach(cell => {
+          const td = document.createElement("td");
+          td.textContent = cell;
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(err => {
+      alert("Failed to load data");
+      console.error(err);
+    });
+}
+</script>
+
+<script>
+const LOOKUP_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzjaz3fpIk5XUZ_O0-joTYWaE1OGsCoToy79wIidPoe_GMnyS4_7aCvPZG4xc94_UIj0w/exec";
+let lookupData = {};
+
+fetch(https://script.google.com/macros/s/AKfycbzjaz3fpIk5XUZ_O0-joTYWaE1OGsCoToy79wIidPoe_GMnyS4_7aCvPZG4xc94_UIj0w/exec)
+  .then(res => res.json())
+  .then(data => {
+    lookupData = data;
+    console.log("Lookup data loaded", lookupData);
+  })
+  .catch(err => console.error("Lookup load failed", err));
+</script>
+
+
+</body>
+</html>
